@@ -1,5 +1,24 @@
 # Bianbu Cloud（gdriscv）用 API KEY 实现 “SSH-like” 远程 Shell（仅 18080）
 
+## BianbuCloud 是什么？
+
+BianbuCloud（入口在 `gdriscv.com`）是进迭时空 SpacemiT 提供的 RISC-V（K1）云实例/远程开发平台：你可以在网页上创建/启动实例，通过远程终端进入系统（示例系统为 Bianbu Linux），并通过平台提供的 Remote API 把 **HTTP 请求**转发到实例的 **18080** 端口。
+
+官方文档入口（可在其中找到 “BianbuCloud 使用指南” 与 “调用 API” 等章节）：
+
+- `https://developer.spacemit.com/documentation`
+
+## BianbuCloud 怎么用（按“使用指南”的思路）
+
+1. 登录 `gdriscv.com`，创建并启动一个 K1 实例。
+2. 进入实例的调试/远程终端，确认能正常执行命令（例如 `uname -a`）。
+3. 在实例里启动一个监听 **18080** 的服务（平台对外转发只支持 `18080`）。
+4. 在平台设置里获取你的 `API KEY`。
+5. 在实例详情/列表里获取该实例的 `deviceId`。
+6. 用 Remote API 调用：对 `https://gdriscv.com/api/remote/{deviceId}/...` 发起请求，并带上请求头 `X-API-KEY: <your_api_key>`，平台会把请求转发到实例的 `18080`。
+
+本仓库做的事情就是：把第 (3)/(6) 步变成一套可复用的 “远程执行/上传文件” 工具（更像 SSH 的用法，但并不是真正的 TCP SSH）。
+
 这个方案的本质不是 TCP SSH 端口转发，而是：`gdriscv.com` 的 Remote API 用你的 `API KEY` 把 HTTP 请求转发到实例的 **18080** 端口。所以你需要在实例里启动一个监听 `18080` 的 HTTP 服务（本仓库提供了一个最小 agent），然后在本地用 PowerShell 脚本去调用 Remote API，实现：
 
 - 远程执行命令（类似 `ssh host "cmd"`）

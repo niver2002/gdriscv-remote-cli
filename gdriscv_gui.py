@@ -268,19 +268,23 @@ class GdriscvGUI:
     def build_stage3(self):
         self._clear()
         f = ttk.Frame(self.container); f.pack(pady=30)
-        ttk.Label(f, text="Stage 3: Configure CLI API Keys", style="Header.TLabel").pack(pady=(0,15))
-        row1 = ttk.Frame(f); row1.pack(pady=4, fill="x")
-        ttk.Label(row1, text="Anthropic Key:", width=15).pack(side="left")
-        self.inp_anthkey = ttk.Entry(row1, width=52, show="*"); self.inp_anthkey.pack(side="left", padx=4)
-        row2 = ttk.Frame(f); row2.pack(pady=4, fill="x")
-        ttk.Label(row2, text="OpenAI Key:", width=15).pack(side="left")
-        self.inp_oaikey = ttk.Entry(row2, width=52, show="*"); self.inp_oaikey.pack(side="left", padx=4)
+        ttk.Label(f, text="Stage 3: Configure CLI API Keys & URLs", style="Header.TLabel").pack(pady=(0,15))
+        fields = [("Anthropic Key:", "*", "anthkey"), ("Anthropic URL:", "", "anthurl"),
+                  ("OpenAI Key:", "*", "oaikey"), ("OpenAI URL:", "", "oaiurl")]
+        for label, show, attr in fields:
+            row = ttk.Frame(f); row.pack(pady=3, fill="x")
+            ttk.Label(row, text=label, width=16).pack(side="left")
+            e = ttk.Entry(row, width=52, show=show or ""); e.pack(side="left", padx=4)
+            setattr(self, f"inp_{attr}", e)
+        ttk.Label(f, text="URL optional. e.g. https://api.example.com/v1", style="Hint.TLabel").pack()
         ttk.Button(f, text="Save & Continue", command=self._on_save_keys).pack(pady=12)
         self.key_status = ttk.Label(f, text="", style="Status.TLabel"); self.key_status.pack()
 
     def _on_save_keys(self):
         akey = self.inp_anthkey.get().strip()
+        aurl = self.inp_anthurl.get().strip()
         okey = self.inp_oaikey.get().strip()
+        ourl = self.inp_oaiurl.get().strip()
         if not akey and not okey:
             self.key_status.config(text="Enter at least one key."); return
         self.key_status.config(text="Saving...")
@@ -288,9 +292,13 @@ class GdriscvGUI:
             try:
                 lines = []
                 if akey: lines.append(f'export ANTHROPIC_API_KEY="{akey}"')
+                if aurl: lines.append(f'export ANTHROPIC_BASE_URL="{aurl}"')
                 if okey: lines.append(f'export OPENAI_API_KEY="{okey}"')
+                if ourl: lines.append(f'export OPENAI_BASE_URL="{ourl}"')
                 self._bashrc_exports = "\n".join(lines)
-                self.api.exec(f'grep -q "ANTHROPIC_API_KEY\\|OPENAI_API_KEY" ~/.bashrc || echo \'{self._bashrc_exports}\' >> ~/.bashrc')
+                # Remove old entries and append new
+                self.api.exec("sed -i '/ANTHROPIC_API_KEY\\|ANTHROPIC_BASE_URL\\|OPENAI_API_KEY\\|OPENAI_BASE_URL/d' ~/.bashrc")
+                self.api.exec(f"cat >> ~/.bashrc << 'GDRISCV_EOF'\n{self._bashrc_exports}\nGDRISCV_EOF")
                 self._after(self._set_status_key, "Keys saved!")
                 self.root.after(500, self.build_stage4)
             except Exception as e:

@@ -241,7 +241,7 @@ class GdriscvGUI:
 
     def _sudo_cmd(self, cmd):
         pwd = self._sudo_pwd
-        return f'echo {json.dumps(pwd)} | sudo -S {cmd}' if pwd else f'sudo -n {cmd}'
+        return f'echo {json.dumps(pwd)} | sudo -S bash -c {json.dumps(cmd)}' if pwd else f'sudo -n bash -c {json.dumps(cmd)}'
 
     def _run_init(self):
         try:
@@ -254,11 +254,11 @@ class GdriscvGUI:
             self._log("\n=== Installing Claude CLI ===")
             r = self._exec_log("which claude 2>/dev/null || echo NOT_FOUND")
             if "NOT_FOUND" in r.get("stdout", ""):
-                self._async_exec_wait("npm install -g @anthropic-ai/claude-code", label="npm install claude-code")
+                self._async_exec_wait(self._sudo_cmd("npm install -g @anthropic-ai/claude-code"), label="npm install claude-code")
             self._log("\n=== Installing Codex CLI ===")
             r = self._exec_log("which codex 2>/dev/null || echo NOT_FOUND")
             if "NOT_FOUND" in r.get("stdout", ""):
-                self._async_exec_wait("npm install -g @openai/codex", label="npm install codex")
+                self._async_exec_wait(self._sudo_cmd("npm install -g @openai/codex"), label="npm install codex")
             self._log("\n=== Initialization complete ===")
         except Exception as e:
             self._log(f"\n[ERROR] {e}"); _dbg(traceback.format_exc())

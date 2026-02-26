@@ -247,18 +247,37 @@ class GdriscvGUI:
         try:
             self._log("=== Installing tmux ===")
             self._async_exec_wait(self._sudo_cmd("apt-get update -qq && apt-get install -y tmux"), label="apt install tmux")
-            self._log("\n=== Installing nodejs npm ===")
-            self._async_exec_wait(self._sudo_cmd("apt-get install -y nodejs npm"), label="apt install nodejs npm")
+
+            # Node.js 22 for riscv64 from unofficial-builds
+            self._log("\n=== Installing Node.js 22 (riscv64 unofficial-builds) ===")
+            r = self._exec_log("node --version 2>/dev/null || echo NONE")
+            node_ver = r.get("stdout", "").strip()
+            need_node = "NONE" in node_ver or (node_ver.startswith("v") and int(node_ver.split(".")[0][1:]) < 20)
+            if need_node:
+                self._async_exec_wait(
+                    "cd /tmp && "
+                    "curl -fsSL https://unofficial-builds.nodejs.org/download/release/v22.15.0/node-v22.15.0-linux-riscv64.tar.xz -o node22.tar.xz && "
+                    "tar xf node22.tar.xz && "
+                    "sudo cp -r node-v22.15.0-linux-riscv64/{bin,lib,include,share} /usr/local/ && "
+                    "rm -rf node22.tar.xz node-v22.15.0-linux-riscv64",
+                    label="install node 22 riscv64")
+                self._exec_log("node --version && npm --version")
+            else:
+                self._log(f"Node.js {node_ver} already >= 20, skipping")
+
             self._log("\n=== Setting npm mirror ===")
             self._exec_log("npm config set registry https://registry.npmmirror.com")
+
             self._log("\n=== Installing Claude CLI ===")
             r = self._exec_log("which claude 2>/dev/null || echo NOT_FOUND")
             if "NOT_FOUND" in r.get("stdout", ""):
                 self._async_exec_wait(self._sudo_cmd("npm install -g @anthropic-ai/claude-code"), label="npm install claude-code")
+
             self._log("\n=== Installing Codex CLI ===")
             r = self._exec_log("which codex 2>/dev/null || echo NOT_FOUND")
             if "NOT_FOUND" in r.get("stdout", ""):
                 self._async_exec_wait(self._sudo_cmd("npm install -g @openai/codex"), label="npm install codex")
+
             self._log("\n=== Initialization complete ===")
         except Exception as e:
             self._log(f"\n[ERROR] {e}"); _dbg(traceback.format_exc())

@@ -110,6 +110,8 @@ class GdriscvGUI:
             s.configure(w, background="#1e1e1e", foreground="#d4d4d4")
         s.configure("TLabel", font=("Consolas", 11))
         s.configure("TButton", font=("Consolas", 11))
+        s.configure("TEntry", fieldbackground="#2d2d2d", foreground="#e0e0e0",
+                     insertcolor="#e0e0e0", font=("Consolas", 11))
         s.configure("TNotebook", background="#1e1e1e")
         s.configure("TNotebook.Tab", font=("Consolas", 11), padding=[12, 4])
         s.configure("Header.TLabel", font=("Consolas", 14, "bold"), foreground="#569cd6")
@@ -256,10 +258,10 @@ class GdriscvGUI:
             if need_node:
                 self._async_exec_wait(
                     "cd /tmp && "
-                    "curl -fsSL https://unofficial-builds.nodejs.org/download/release/v22.15.0/node-v22.15.0-linux-riscv64.tar.xz -o node22.tar.xz && "
+                    "curl -fsSL -L https://github.com/gounthar/unofficial-builds/releases/download/v22.22.0/node-v22.22.0-linux-riscv64.tar.xz -o node22.tar.xz && "
                     "tar xf node22.tar.xz && "
-                    "sudo cp -r node-v22.15.0-linux-riscv64/{bin,lib,include,share} /usr/local/ && "
-                    "rm -rf node22.tar.xz node-v22.15.0-linux-riscv64",
+                    "sudo cp -r node-v22.22.0-linux-riscv64/{bin,lib,include,share} /usr/local/ && "
+                    "rm -rf node22.tar.xz node-v22.22.0-linux-riscv64",
                     label="install node 22 riscv64")
                 self._exec_log("node --version && npm --version")
             else:
@@ -344,8 +346,10 @@ class GdriscvGUI:
                                             insertbackground="#ccc", state="disabled", wrap="none")
             txt.pack(fill="both", expand=True)
             inp_frame = ttk.Frame(frame); inp_frame.pack(fill="x", pady=(3,0))
-            ttk.Label(inp_frame, text=">", font=("Consolas", 11)).pack(side="left")
-            inp = ttk.Entry(inp_frame, font=("Consolas", 11))
+            ttk.Label(inp_frame, text=">", font=("Consolas", 12, "bold"), foreground="#569cd6").pack(side="left")
+            inp = tk.Entry(inp_frame, font=("Consolas", 11), bg="#1a1a1a", fg="#e0e0e0",
+                           insertbackground="#e0e0e0", relief="flat", highlightthickness=1,
+                           highlightcolor="#569cd6", highlightbackground="#3c3c3c")
             inp.pack(side="left", fill="x", expand=True, padx=(4,0))
             inp.bind("<Return>", lambda e, n=name: self._on_term_send(n))
             self.term_widgets[name] = (txt, inp)
